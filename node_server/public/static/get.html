@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Get files from your friend XMLHttpRequest and websockets</title>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    <script type="text/javascript">
+     //GLOBAL VARS
+	var sessionId = "30000";
+	var domain = document.domain;
+    	var socket = new WebSocket("ws://" + domain + ":8080/");   
+	socket.onopen = function () {
+	console.log("Websocket connected");
+	$("#websocketInfo").empty().html("Connected to websocket server");		
+	
+	socket.send(JSON.stringify({action : "newGetSession", sessionId : sessionId}));
+
+	}
+	socket.onmessage = function (msg) {
+		console.log("new message ");
+		console.log(msg);
+		var json = JSON.parse(msg.data);
+		if(json.action == 'startTransferSession'){
+			$("#websocketInfo").empty().html("Data transfer started");
+			if(json.fileType == "image/jpeg"){	
+			$("#dataReceiver").empty().html('<img src="/api/talklive/' + json.sessionId + '/' + 
+				json.fileName + '">');}
+			if(json.fileType == "audio/mpeg" || json.fileType == "audio/mp3"){
+			json.fileType = "audio/mpeg";	
+			$("#dataReceiver").empty().html('<audio autoplay="autoplay" controls="controls">' +
+				'<source src="/api/talklive/' +
+				json.sessionId + '/' + 
+				json.fileName + '" type="' + json.fileType + '" />');}
+			json.action = "ackTransferSession";
+			socket.send(JSON.stringify(json));	
+		}
+	}
+	function getUrlVars() {
+            var vars = {};
+            var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
+            vars[key] = value;
+    });
+    return vars;
+        } 
+	
+	$(document).ready(function() 
+	{
+	sessionId = getUrlVars()["sessionId"];
+	console.log("sessionId : " + sessionId);
+	if (sessionId != null)
+        {       
+        console.log("sessionId : " + sessionId);
+        $("#sessionInfo").empty().html("<p>Your sessionId is " + sessionId + " <p>Please use http://10.255.132.175/static/upload.html?sessionId=" + sessionId + " for sending files"); 
+        }
+	
+	});
+    </script>
+</head>
+<body>
+    <div id="sessionInfo">test</div>
+    <div id="websocketInfo"> Connecting to Websocket server and waiting for upload </div>
+    <div id="dataReceiver"> </div>
+</body>
+</html>
